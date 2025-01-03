@@ -6,8 +6,41 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id              String         @id @default(uuid())
+  email           String         @unique
+  name            String
+  profile_picture String?
+  password        String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  isDeleted       Boolean        @default(false)
+  focus_session   FocusSession[]
+  streak          Streak[]
+
+  @@map("users")
+}
+
+model FocusSession {
+  id         String   @id @default(uuid())
+  timestamps DateTime @default(now())
+  duration   Int
+  isDeleted  Boolean  @default(false)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("focus_sessions")
+}
+
+model Streak {
+  id            String   @id @default(uuid())
+  currentStreak Int
+  longestStreak Int
+  isDeleted     Boolean  @default(false)
+  lastActive    DateTime
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@map("streaks")
 }
