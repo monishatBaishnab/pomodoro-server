@@ -20,11 +20,20 @@ const config_1 = require("../../config");
 const http_error_1 = __importDefault(require("../../errors/http_error"));
 const jwt_1 = require("../../utils/jwt");
 const upload_1 = require("../../middlewares/upload");
+const redisClient_1 = __importDefault(require("../../redis/redisClient"));
+const USER_CACHE_KEY = (userId) => `user:${userId}:data`;
 // Service for login user
 const login = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const user_info = yield prisma_client_1.default.user.findUniqueOrThrow({
-        where: { email: payload.email, isDeleted: false },
-    });
+    const cachedUser = yield redisClient_1.default.get(USER_CACHE_KEY(payload.id));
+    // Parse json data from cached string
+    let user_info = cachedUser ? JSON.parse(cachedUser) : null;
+    yield redisClient_1.default.del(USER_CACHE_KEY(payload.id));
+    if (!cachedUser) {
+        user_info = yield prisma_client_1.default.user.findUniqueOrThrow({
+            where: { email: payload.email, isDeleted: false },
+        });
+        yield redisClient_1.default.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info));
+    }
     const is_match_pass = yield bcrypt_1.default.compare(String(payload.password), user_info.password);
     if (!is_match_pass) {
         throw new http_error_1.default(http_status_1.default.UNAUTHORIZED, "Password not matched.");
@@ -48,6 +57,7 @@ const register = (payload, file) => __awaiter(void 0, void 0, void 0, function* 
     const created_user = yield prisma_client_1.default.user.create({
         data: user_data,
     });
+    yield redisClient_1.default.set(USER_CACHE_KEY(payload.id), JSON.stringify(created_user));
     const token_data = (0, jwt_1.sanitize_token_data)(created_user);
     const token = (0, jwt_1.generate_token)(token_data, config_1.local_config.jwt_secret);
     return { token };
