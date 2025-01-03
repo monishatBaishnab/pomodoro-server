@@ -14,17 +14,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.streak_services = void 0;
 const prisma_client_1 = __importDefault(require("../../utils/prisma_client"));
+const redisClient_1 = __importDefault(require("../../redis/redisClient"));
+const STREAKS_CACHE_KEY = (user_id) => `streaks:${user_id}:data`;
+// Service for fetching all streaks
+const fetch_all_from_db = (user) => __awaiter(void 0, void 0, void 0, function* () {
+    const cached_streaks = yield redisClient_1.default.get(STREAKS_CACHE_KEY(user.id));
+    let streaks = cached_streaks ? JSON.parse(cached_streaks) : null;
+    if (!streaks) {
+        streaks = yield prisma_client_1.default.streak.findMany({
+            where: {
+                userId: user.id,
+            },
+        });
+        redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks));
+    }
+    return streaks;
+});
 // Service for create new
-// Helper function to calculate one day in milliseconds
-const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const create_one_into_db = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    // Fetch streak data for the user
-    const streak = yield prisma_client_1.default.streak.findFirst({
-        where: { userId: user.id },
-    });
+    // Helper function to calculate one day in milliseconds
+    const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+    const cached_streaks = yield redisClient_1.default.get(STREAKS_CACHE_KEY(user.id));
+    let streak = cached_streaks ? JSON.parse(cached_streaks) : null;
+    if (!streak) {
+        streak = yield prisma_client_1.default.streak.findFirst({
+            where: { userId: user.id },
+        });
+    }
     // Get current date and last active date (normalized to remove time part)
     const today = new Date(new Date().toDateString()).getTime();
-    const lastActive = (streak === null || streak === void 0 ? void 0 : streak.lastActive) ? new Date(streak.lastActive.toDateString()).getTime() : 0;
+    const lastActive = (streak === null || streak === void 0 ? void 0 : streak.lastActive)
+        ? new Date(new Date(streak.lastActive).toDateString()).getTime()
+        : 0;
     // Default values for current streak and longest streak
     let currentStreak = 1;
     let longestStreak = streak ? Number(streak.longestStreak) : 1;
@@ -34,8 +55,9 @@ const create_one_into_db = (user) => __awaiter(void 0, void 0, void 0, function*
             currentStreak = Number(streak.currentStreak) + 1;
             longestStreak = Math.max(longestStreak, currentStreak);
         }
+        yield redisClient_1.default.del(STREAKS_CACHE_KEY(user.id));
         // Update streak data
-        const updatedStreak = yield prisma_client_1.default.streak.update({
+        yield prisma_client_1.default.streak.update({
             data: {
                 currentStreak,
                 longestStreak,
@@ -44,19 +66,25 @@ const create_one_into_db = (user) => __awaiter(void 0, void 0, void 0, function*
             },
             where: { id: streak.id },
         });
-        return updatedStreak;
     }
     // If no streak exists, create a new one
-    const newStreak = yield prisma_client_1.default.streak.create({
-        data: {
-            currentStreak: 1,
-            longestStreak: 1,
-            lastActive: new Date(),
-            userId: user.id,
-        },
+    if (!streak) {
+        yield prisma_client_1.default.streak.create({
+            data: {
+                currentStreak: 1,
+                longestStreak: 1,
+                lastActive: new Date(),
+                userId: user.id,
+            },
+        });
+    }
+    streak = yield prisma_client_1.default.streak.findFirst({
+        where: { userId: user.id },
     });
-    return newStreak;
+    redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streak));
+    return streak;
 });
 exports.streak_services = {
+    fetch_all_from_db,
     create_one_into_db,
 };

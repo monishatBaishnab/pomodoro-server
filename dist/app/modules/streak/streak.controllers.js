@@ -18,16 +18,28 @@ const catch_async_1 = __importDefault(require("../../utils/catch_async"));
 const send_response_1 = __importDefault(require("../../utils/send_response"));
 const streak_services_1 = require("./streak.services");
 // Controller for create streak
+const fetch_all = (0, catch_async_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Creating Streak
+    const result = yield streak_services_1.streak_services.fetch_all_from_db(req.user);
+    // Send response to client
+    (0, send_response_1.default)(res, {
+        message: "Streaks Fetched.",
+        status: http_status_1.default.OK,
+        data: result,
+    });
+}));
+// Controller for create streak
 const create_one = (0, catch_async_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Creating Streak
     const result = yield streak_services_1.streak_services.create_one_into_db(req.user);
     // Send response to client
     (0, send_response_1.default)(res, {
-        message: "Streak Created.",
-        status: http_status_1.default.CREATED,
+        message: "Streak Updated.",
+        status: http_status_1.default.OK,
         data: result,
     });
 }));
 exports.streak_controllers = {
+    fetch_all,
     create_one,
 };
