@@ -14,12 +14,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.focus_session_services = void 0;
 const prisma_client_1 = __importDefault(require("../../utils/prisma_client"));
+const redisClient_1 = __importDefault(require("../../redis/redisClient"));
+const FOCUS_SESSION_CACHE_KEY = (user_id) => `focus_session:${user_id}:data`;
 // Service for create new focus session
 const fetch_metric_from_db = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    const sessions = yield prisma_client_1.default.focusSession.findMany({
-        where: { userId: user.id },
-        orderBy: { timestamps: "desc" },
-    });
+    const cached_focus_metric = yield redisClient_1.default.get(FOCUS_SESSION_CACHE_KEY(user.id));
+    let sessions = cached_focus_metric ? JSON.parse(cached_focus_metric) : null;
+    if (!sessions) {
+        console.log("Fetch from DB.");
+        sessions = yield prisma_client_1.default.focusSession.findMany({
+            where: { userId: user.id },
+            orderBy: { timestamps: "desc" },
+        });
+        yield redisClient_1.default.set(FOCUS_SESSION_CACHE_KEY(user.id), JSON.stringify(sessions));
+    }
     const total_duration = sessions === null || sessions === void 0 ? void 0 : sessions.reduce((sum, session) => {
         return (sum += Number(session.duration));
     }, 0);
@@ -34,6 +42,12 @@ const create_one_into_db = (payload) => __awaiter(void 0, void 0, void 0, functi
     const created_session = yield prisma_client_1.default.focusSession.create({
         data: { duration: Number(duration), userId },
     });
+    yield redisClient_1.default.del(FOCUS_SESSION_CACHE_KEY(payload.userId));
+    const sessions = yield prisma_client_1.default.focusSession.findMany({
+        where: { userId: payload.userId },
+        orderBy: { timestamps: "desc" },
+    });
+    yield redisClient_1.default.set(FOCUS_SESSION_CACHE_KEY(payload.userId), JSON.stringify(sessions));
     return created_session;
 });
 exports.focus_session_services = {
