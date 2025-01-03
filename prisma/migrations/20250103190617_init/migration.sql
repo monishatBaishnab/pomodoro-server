@@ -19,6 +19,8 @@ CREATE TABLE "focus_sessions" (
     "duration" INTEGER NOT NULL,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "focus_sessions_pkey" PRIMARY KEY ("id")
 );
@@ -31,6 +33,8 @@ CREATE TABLE "streaks" (
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "lastActive" TIMESTAMP(3) NOT NULL,
     "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "streaks_pkey" PRIMARY KEY ("id")
 );
