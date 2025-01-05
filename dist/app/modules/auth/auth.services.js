@@ -32,7 +32,7 @@ const login = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         user_info = yield prisma_client_1.default.user.findUniqueOrThrow({
             where: { email: payload.email, isDeleted: false },
         });
-        yield redisClient_1.default.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info));
+        yield redisClient_1.default.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info), { EX: 3600 });
     }
     const is_match_pass = yield bcrypt_1.default.compare(String(payload.password), user_info.password);
     if (!is_match_pass) {

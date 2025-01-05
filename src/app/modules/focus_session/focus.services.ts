@@ -3,22 +3,23 @@ import prisma from "../../utils/prisma_client";
 import { JwtPayload } from "jsonwebtoken";
 import redisClient from "../../redis/redisClient";
 
-const FOCUS_SESSION_CACHE_KEY = (user_id: string) => `focus_session:${user_id}:data`;
+export const FOCUS_SESSION_CACHE_KEY = (user_id: string) => `focus_session:${user_id}:data`;
 
 // Service for create new focus session
 const fetch_metric_from_db = async (user: JwtPayload) => {
-  const cached_focus_metric = await redisClient.get(FOCUS_SESSION_CACHE_KEY(user.id));
 
+  const cached_focus_metric = await redisClient.get(FOCUS_SESSION_CACHE_KEY(user.id));
+ 
   let sessions = cached_focus_metric ? JSON.parse(cached_focus_metric) : null;
 
   if (!sessions) {
     console.log("Fetch from DB.");
     sessions = await prisma.focusSession.findMany({
       where: { userId: user.id },
-      orderBy: { timestamps: "desc" },
+      orderBy: { timestamps: "asc" },
     });
 
-    await redisClient.set(FOCUS_SESSION_CACHE_KEY(user.id), JSON.stringify(sessions));
+    await redisClient.set(FOCUS_SESSION_CACHE_KEY(user.id), JSON.stringify(sessions), { EX: 3600 });
   }
 
   const total_duration = sessions?.reduce((sum: number, session: FocusSession) => {
@@ -46,7 +47,7 @@ const create_one_into_db = async (payload: Pick<FocusSession, "duration" | "user
     orderBy: { timestamps: "desc" },
   });
 
-  await redisClient.set(FOCUS_SESSION_CACHE_KEY(payload.userId), JSON.stringify(sessions));
+  await redisClient.set(FOCUS_SESSION_CACHE_KEY(payload.userId), JSON.stringify(sessions), { EX: 3600 });
 
   return created_session;
 };

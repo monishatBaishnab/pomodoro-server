@@ -2,6 +2,7 @@ import { Router } from "express";
 import { auth_routes } from "../modules/auth/auth.routes";
 import { focus_metric_routes, focus_session_routes } from "../modules/focus_session/focus.routes";
 import { streak_routes } from "../modules/streak/streak.routes";
+import { badge_routes } from "../modules/badge/badge.routes";
 
 type TRoutes = {
   path: string;
@@ -24,6 +25,10 @@ const routes: TRoutes = [
   {
     path: "/streaks",
     element: streak_routes,
+  },
+  {
+    path: "/badges",
+    element: badge_routes,
   },
 ];
 

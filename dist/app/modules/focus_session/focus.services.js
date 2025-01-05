@@ -12,21 +12,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.focus_session_services = void 0;
+exports.focus_session_services = exports.FOCUS_SESSION_CACHE_KEY = void 0;
 const prisma_client_1 = __importDefault(require("../../utils/prisma_client"));
 const redisClient_1 = __importDefault(require("../../redis/redisClient"));
 const FOCUS_SESSION_CACHE_KEY = (user_id) => `focus_session:${user_id}:data`;
+exports.FOCUS_SESSION_CACHE_KEY = FOCUS_SESSION_CACHE_KEY;
 // Service for create new focus session
 const fetch_metric_from_db = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    const cached_focus_metric = yield redisClient_1.default.get(FOCUS_SESSION_CACHE_KEY(user.id));
+    const cached_focus_metric = yield redisClient_1.default.get((0, exports.FOCUS_SESSION_CACHE_KEY)(user.id));
     let sessions = cached_focus_metric ? JSON.parse(cached_focus_metric) : null;
     if (!sessions) {
         console.log("Fetch from DB.");
         sessions = yield prisma_client_1.default.focusSession.findMany({
             where: { userId: user.id },
-            orderBy: { timestamps: "desc" },
+            orderBy: { timestamps: "asc" },
         });
-        yield redisClient_1.default.set(FOCUS_SESSION_CACHE_KEY(user.id), JSON.stringify(sessions));
+        yield redisClient_1.default.set((0, exports.FOCUS_SESSION_CACHE_KEY)(user.id), JSON.stringify(sessions), { EX: 3600 });
     }
     const total_duration = sessions === null || sessions === void 0 ? void 0 : sessions.reduce((sum, session) => {
         return (sum += Number(session.duration));
@@ -42,12 +43,12 @@ const create_one_into_db = (payload) => __awaiter(void 0, void 0, void 0, functi
     const created_session = yield prisma_client_1.default.focusSession.create({
         data: { duration: Number(duration), userId },
     });
-    yield redisClient_1.default.del(FOCUS_SESSION_CACHE_KEY(payload.userId));
+    yield redisClient_1.default.del((0, exports.FOCUS_SESSION_CACHE_KEY)(payload.userId));
     const sessions = yield prisma_client_1.default.focusSession.findMany({
         where: { userId: payload.userId },
         orderBy: { timestamps: "desc" },
     });
-    yield redisClient_1.default.set(FOCUS_SESSION_CACHE_KEY(payload.userId), JSON.stringify(sessions));
+    yield redisClient_1.default.set((0, exports.FOCUS_SESSION_CACHE_KEY)(payload.userId), JSON.stringify(sessions), { EX: 3600 });
     return created_session;
 });
 exports.focus_session_services = {

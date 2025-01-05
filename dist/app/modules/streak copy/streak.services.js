@@ -28,7 +28,7 @@ const fetch_all_from_db = (user) => __awaiter(void 0, void 0, void 0, function* 
                 userId: user.id,
             },
         });
-        redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
+        redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks));
     }
     return Object.assign({ streaks }, metrics);
 });
@@ -83,7 +83,7 @@ const create_one_into_db = (user) => __awaiter(void 0, void 0, void 0, function*
     streak = yield prisma_client_1.default.streak.findFirst({
         where: { userId: user.id },
     });
-    redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streak), { EX: 3600 });
+    redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streak));
     return streak;
 });
 exports.streak_services = {

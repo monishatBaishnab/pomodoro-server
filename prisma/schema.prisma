@@ -18,6 +18,7 @@ model User {
   isDeleted       Boolean        @default(false)
   focus_session   FocusSession[]
   streak          Streak[]
+  UserBadge       UserBadge[]
 
   @@map("users")
 }
@@ -47,4 +48,23 @@ model Streak {
   user          User     @relation(fields: [userId], references: [id])
 
   @@map("streaks")
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  icon        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id])
+  badge    Badge    @relation(fields: [badgeId], references: [id])
 }

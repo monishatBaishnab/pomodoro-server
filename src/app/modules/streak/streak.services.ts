@@ -1,12 +1,15 @@
 import { JwtPayload } from "jsonwebtoken";
 import prisma from "../../utils/prisma_client";
 import redisClient from "../../redis/redisClient";
+import { focus_session_services } from "../focus_session/focus.services";
 
 const STREAKS_CACHE_KEY = (user_id: string) => `streaks:${user_id}:data`;
 
 // Service for fetching all streaks
 const fetch_all_from_db = async (user: JwtPayload) => {
   const cached_streaks = await redisClient.get(STREAKS_CACHE_KEY(user.id));
+
+  const metrics = await focus_session_services.fetch_metric_from_db(user);
 
   let streaks = cached_streaks ? JSON.parse(cached_streaks) : null;
 
@@ -16,10 +19,10 @@ const fetch_all_from_db = async (user: JwtPayload) => {
         userId: user.id,
       },
     });
-    redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks));
+    redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
   }
 
-  return streaks;
+  return { streaks, ...metrics };
 };
 
 // Service for create new
@@ -80,7 +83,7 @@ const create_one_into_db = async (user: JwtPayload) => {
   streak = await prisma.streak.findFirst({
     where: { userId: user.id as string },
   });
-  redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streak));
+  redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streak), { EX: 3600 });
 
   return streak;
 };

@@ -5,6 +5,7 @@ const express_1 = require("express");
 const auth_routes_1 = require("../modules/auth/auth.routes");
 const focus_routes_1 = require("../modules/focus_session/focus.routes");
 const streak_routes_1 = require("../modules/streak/streak.routes");
+const badge_routes_1 = require("../modules/badge/badge.routes");
 const routes = [
     {
         path: "/auth",
@@ -21,6 +22,10 @@ const routes = [
     {
         path: "/streaks",
         element: streak_routes_1.streak_routes,
+    },
+    {
+        path: "/badges",
+        element: badge_routes_1.badge_routes,
     },
 ];
 const router = (0, express_1.Router)();

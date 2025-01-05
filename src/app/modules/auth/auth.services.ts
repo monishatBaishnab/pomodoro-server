@@ -26,7 +26,7 @@ const login = async (payload: User) => {
       where: { email: payload.email, isDeleted: false },
     });
 
-    await redisClient.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info));
+    await redisClient.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info), { EX: 3600 });
   }
 
   const is_match_pass = await bcrypt.compare(String(payload.password), user_info.password);
