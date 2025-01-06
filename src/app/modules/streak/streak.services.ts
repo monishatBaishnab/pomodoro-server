@@ -7,6 +7,7 @@ const STREAKS_CACHE_KEY = (user_id: string) => `streaks:${user_id}:data`;
 
 // Service for fetching all streaks
 const fetch_all_from_db = async (user: JwtPayload) => {
+   await redisClient.del(STREAKS_CACHE_KEY(user.id));
   const cached_streaks = await redisClient.get(STREAKS_CACHE_KEY(user.id));
 
   const metrics = await focus_session_services.fetch_metric_from_db(user);
@@ -19,9 +20,8 @@ const fetch_all_from_db = async (user: JwtPayload) => {
         userId: user.id,
       },
     });
-    redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
+    // redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
   }
-
   return { streaks, ...metrics };
 };
 
@@ -46,7 +46,7 @@ const create_one_into_db = async (user: JwtPayload) => {
     : 0;
 
   // Default values for current streak and longest streak
-  let currentStreak = 1;
+  let currentStreak = streak ? Number(streak.currentStreak) : 1;
   let longestStreak = streak ? Number(streak.longestStreak) : 1;
 
   // If streak exists, check if the user has maintained the streak

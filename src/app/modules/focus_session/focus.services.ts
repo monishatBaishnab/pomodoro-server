@@ -13,7 +13,6 @@ const fetch_metric_from_db = async (user: JwtPayload) => {
   let sessions = cached_focus_metric ? JSON.parse(cached_focus_metric) : null;
 
   if (!sessions) {
-    console.log("Fetch from DB.");
     sessions = await prisma.focusSession.findMany({
       where: { userId: user.id },
       orderBy: { timestamps: "asc" },

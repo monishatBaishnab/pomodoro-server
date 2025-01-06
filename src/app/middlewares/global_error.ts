@@ -22,8 +22,6 @@ const global_error = (err: any, req: Request, res: Response, next: NextFunction)
       message = err.message;
     }
   
-    console.log(err);
-
     res.status(status).send({
       success,
       status,

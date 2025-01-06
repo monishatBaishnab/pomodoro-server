@@ -22,7 +22,6 @@ const fetch_metric_from_db = (user) => __awaiter(void 0, void 0, void 0, functio
     const cached_focus_metric = yield redisClient_1.default.get((0, exports.FOCUS_SESSION_CACHE_KEY)(user.id));
     let sessions = cached_focus_metric ? JSON.parse(cached_focus_metric) : null;
     if (!sessions) {
-        console.log("Fetch from DB.");
         sessions = yield prisma_client_1.default.focusSession.findMany({
             where: { userId: user.id },
             orderBy: { timestamps: "asc" },

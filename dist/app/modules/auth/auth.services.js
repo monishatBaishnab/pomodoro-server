@@ -24,15 +24,15 @@ const redisClient_1 = __importDefault(require("../../redis/redisClient"));
 const USER_CACHE_KEY = (userId) => `user:${userId}:data`;
 // Service for login user
 const login = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const cachedUser = yield redisClient_1.default.get(USER_CACHE_KEY(payload.id));
+    // await redisClient.del(USER_CACHE_KEY(payload.email));
+    const cachedUser = yield redisClient_1.default.get(USER_CACHE_KEY(payload.email));
     // Parse json data from cached string
     let user_info = cachedUser ? JSON.parse(cachedUser) : null;
-    yield redisClient_1.default.del(USER_CACHE_KEY(payload.id));
-    if (!cachedUser) {
+    if (!cachedUser || cachedUser == null) {
         user_info = yield prisma_client_1.default.user.findUniqueOrThrow({
             where: { email: payload.email, isDeleted: false },
         });
-        yield redisClient_1.default.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info), { EX: 3600 });
+        yield redisClient_1.default.set(USER_CACHE_KEY(payload.email), JSON.stringify(user_info), { EX: 3600 });
     }
     const is_match_pass = yield bcrypt_1.default.compare(String(payload.password), user_info.password);
     if (!is_match_pass) {

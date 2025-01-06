@@ -14,19 +14,19 @@ const USER_CACHE_KEY = (userId: string) => `user:${userId}:data`;
 
 // Service for login user
 const login = async (payload: User) => {
-  const cachedUser = await redisClient.get(USER_CACHE_KEY(payload.id));
+  // await redisClient.del(USER_CACHE_KEY(payload.email));
+  const cachedUser = await redisClient.get(USER_CACHE_KEY(payload.email));
 
   // Parse json data from cached string
   let user_info = cachedUser ? JSON.parse(cachedUser) : null;
 
-  await redisClient.del(USER_CACHE_KEY(payload.id));
+  if (!cachedUser || cachedUser == null) {
 
-  if (!cachedUser) {
     user_info = await prisma.user.findUniqueOrThrow({
       where: { email: payload.email, isDeleted: false },
     });
 
-    await redisClient.set(USER_CACHE_KEY(payload.id), JSON.stringify(user_info), { EX: 3600 });
+    await redisClient.set(USER_CACHE_KEY(payload.email), JSON.stringify(user_info), { EX: 3600 });
   }
 
   const is_match_pass = await bcrypt.compare(String(payload.password), user_info.password);

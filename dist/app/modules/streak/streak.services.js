@@ -19,6 +19,7 @@ const focus_services_1 = require("../focus_session/focus.services");
 const STREAKS_CACHE_KEY = (user_id) => `streaks:${user_id}:data`;
 // Service for fetching all streaks
 const fetch_all_from_db = (user) => __awaiter(void 0, void 0, void 0, function* () {
+    yield redisClient_1.default.del(STREAKS_CACHE_KEY(user.id));
     const cached_streaks = yield redisClient_1.default.get(STREAKS_CACHE_KEY(user.id));
     const metrics = yield focus_services_1.focus_session_services.fetch_metric_from_db(user);
     let streaks = cached_streaks ? JSON.parse(cached_streaks) : null;
@@ -28,7 +29,7 @@ const fetch_all_from_db = (user) => __awaiter(void 0, void 0, void 0, function* 
                 userId: user.id,
             },
         });
-        redisClient_1.default.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
+        // redisClient.set(STREAKS_CACHE_KEY(user.id), JSON.stringify(streaks), { EX: 3600 });
     }
     return Object.assign({ streaks }, metrics);
 });
@@ -49,7 +50,7 @@ const create_one_into_db = (user) => __awaiter(void 0, void 0, void 0, function*
         ? new Date(new Date(streak.lastActive).toDateString()).getTime()
         : 0;
     // Default values for current streak and longest streak
-    let currentStreak = 1;
+    let currentStreak = streak ? Number(streak.currentStreak) : 1;
     let longestStreak = streak ? Number(streak.longestStreak) : 1;
     // If streak exists, check if the user has maintained the streak
     if (streak) {
